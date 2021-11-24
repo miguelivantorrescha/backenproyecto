@@ -1,30 +1,57 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
+  del, get,
+  getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
-import {Persona} from '../models';
+import {Llaves} from '../config/llave';
+import {Credenciales, Persona} from '../models';
 import {PersonaRepository} from '../repositories';
+import {AutenticacionService} from '../services';
+const fetch = require('node-fetch');
 
 export class PersonaController {
   constructor(
     @repository(PersonaRepository)
-    public personaRepository : PersonaRepository,
-  ) {}
+    public personaRepository: PersonaRepository,
+    @service(AutenticacionService)
+    public servicioAutenticacion: AutenticacionService
+  ) { }
+
+  @post("/identificarPersona", {
+    responses: {
+      '200': {
+        description: "identficcion de usuario"
+      }
+    }
+  })
+  async identificarPersona(
+    @requestBody() credencial: Credenciales
+  ) {
+    let p = await this.servicioAutenticacion.IdentificarPersona(credencial.usuario, credencial.clave);
+    if (p) {
+      let token = this.servicioAutenticacion.GenerarTokenJWT(p);
+      return {
+        datos: {
+          nombre: p.nombre,
+          correo: p.correo,
+          id: p.id
+        },
+        tk: token
+      }
+    } else {
+      throw new HttpErrors[401]("los datos ingresados son incorrectos")
+    }
+
+  }
 
   @post('/personas')
   @response(200, {
@@ -44,7 +71,26 @@ export class PersonaController {
     })
     persona: Omit<Persona, 'id'>,
   ): Promise<Persona> {
-    return this.personaRepository.create(persona);
+
+    let clave = this.servicioAutenticacion.GenerarClave();
+    let claveCifrada = this.servicioAutenticacion.CifrarClave(clave);
+    persona.clave = claveCifrada;
+    let p = await this.personaRepository.create(persona);
+
+
+    //notificar al usuario
+    let destino = persona.correo;
+    let asunto = 'registro en la plataforma';
+    let mensaje = `hola ${persona.nombre}, su nombre de usuario es: ${persona.nombre} y su contrasena es ${clave} `;
+    //let mensaje = 'hola';
+    fetch(`${Llaves.urlServicioNotificaciones}/enviocorreo?correodestino=${destino}&asunto=${asunto}&contenido=${mensaje}`)
+    //fetch(`http://127.0.0.1:5000/enviocorreo?correodestino=${destino}&asunto=${asunto}&contenido=${mensaje}`)
+    //etch(`http://127.0.0.1:5000/enviocorreo?correodestino=${destino}&asunto=${asunto}&contenido=${mensaje}`)
+
+      .then((data: any) => {
+        console.log(data);
+      })
+    return p;
   }
 
   @get('/personas/count')
