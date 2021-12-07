@@ -71,13 +71,10 @@ export class PersonaController {
     })
     persona: Omit<Persona, 'id'>,
   ): Promise<Persona> {
-
     let clave = this.servicioAutenticacion.GenerarClave();
     let claveCifrada = this.servicioAutenticacion.CifrarClave(clave);
     persona.clave = claveCifrada;
     let p = await this.personaRepository.create(persona);
-
-
     //notificar al usuario
     let destino = persona.correo;
     let asunto = 'registro en la plataforma';
@@ -86,7 +83,6 @@ export class PersonaController {
     fetch(`${Llaves.urlServicioNotificaciones}/enviocorreo?correodestino=${destino}&asunto=${asunto}&contenido=${mensaje}`)
     //fetch(`http://127.0.0.1:5000/enviocorreo?correodestino=${destino}&asunto=${asunto}&contenido=${mensaje}`)
     //etch(`http://127.0.0.1:5000/enviocorreo?correodestino=${destino}&asunto=${asunto}&contenido=${mensaje}`)
-
       .then((data: any) => {
         console.log(data);
       })
