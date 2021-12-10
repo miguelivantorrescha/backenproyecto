@@ -28,7 +28,7 @@ export class ProductoController {
     public productoRepository : ProductoRepository,
   ) {}
 
-  @authenticate.skip()
+  //@authenticate.skip()
   @post('/productos')
   @response(200, {
     description: 'Producto model instance',
@@ -78,7 +78,7 @@ export class ProductoController {
   ): Promise<Producto[]> {
     return this.productoRepository.find(filter);
   }
-
+  @authenticate.skip()
   @patch('/productos')
   @response(200, {
     description: 'Producto PATCH success count',
@@ -113,7 +113,7 @@ export class ProductoController {
   ): Promise<Producto> {
     return this.productoRepository.findById(id, filter);
   }
-
+  @authenticate.skip()
   @patch('/productos/{id}')
   @response(204, {
     description: 'Producto PATCH success',
@@ -131,7 +131,7 @@ export class ProductoController {
   ): Promise<void> {
     await this.productoRepository.updateById(id, producto);
   }
-
+  @authenticate.skip()
   @put('/productos/{id}')
   @response(204, {
     description: 'Producto PUT success',
